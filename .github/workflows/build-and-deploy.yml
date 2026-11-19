@@ -1,25 +1,22 @@
-name: Bygg og publiser docker-image for main
+name: Bygg og deploy
 
 on:
   workflow_call:
+    inputs:
+      clusters:
+        description: 'JSON-array med clustere, f.eks. ["dev-gcp", "prod-gcp"]'
+        required: true
+        type: string
     secrets:
       NAIS_WORKLOAD_IDENTITY_PROVIDER:
         required: true
-  push:
-    branches:
-      - main
-    paths-ignore:
-      - .github/**
-      - README.md
-      - howto.md
 
 jobs:
   build:
-    name: Build and push docker image
-    if: github.repository != 'navikt/tms-backend-deploy'
+    name: Bygg, test og publiser image
     runs-on: ubuntu-latest
     permissions:
-      contents: write
+      contents: read
       id-token: write
     outputs:
       image: ${{ steps.docker-build-push.outputs.image }}
@@ -35,14 +32,9 @@ jobs:
 
       - name: Sett opp gradle
         uses: gradle/actions/setup-gradle@v6
-        with:
-          dependency-graph: generate-and-submit
 
       - name: Bygg prosjekt og kjør tester
         run: ./gradlew build
-
-      - name: assemble prosjekt
-        run: ./gradlew assemble
 
       - name: Build og push docker-image
         uses: nais/docker-build-push@v0
@@ -54,23 +46,19 @@ jobs:
 
   deploy:
     name: Deploy til NAIS
-    runs-on: ubuntu-latest
     needs: build
+    runs-on: ubuntu-latest
     permissions:
       contents: read
       id-token: write
     strategy:
       matrix:
-        cluster: [dev-gcp, prod-gcp]
+        cluster: ${{ fromJSON(inputs.clusters) }}
     steps:
       - name: Sjekk ut prosjekt
         uses: actions/checkout@v7
 
-      - name: 'Sjekk om deploy til ${{ matrix.cluster }} er mulig'
-        run: echo "DEPLOY_CONFIG_DEFINED=$([[ -f ./nais/${{ matrix.cluster }}/nais.yaml ]] && echo 'true' || echo 'false')" >> "$GITHUB_ENV"
-
       - name: 'Deploy til ${{ matrix.cluster }}'
-        if: env.DEPLOY_CONFIG_DEFINED == 'true'
         uses: nais/deploy/actions/deploy@v2
         env:
           CLUSTER: ${{ matrix.cluster }}
