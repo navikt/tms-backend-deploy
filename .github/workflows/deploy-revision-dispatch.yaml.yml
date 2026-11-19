@@ -1,0 +1,80 @@
+name: Deploy revision
+
+on:
+  workflow_call:
+    inputs:
+      commit:
+        description: 'Commit SHA som skal deployes'
+        required: true
+        type: string
+      clusters:
+        description: 'JSON-array med cluster som skal deployes til'
+        required: true
+        type: string
+    secrets:
+      NAIS_WORKLOAD_IDENTITY_PROVIDER:
+        required: true
+  repository_dispatch:
+    types: deploy-revision
+
+env:
+  COMMIT_SHA: ${{ inputs.commit || github.event.client_payload.commit }}
+
+jobs:
+  build:
+    name: Bygg prosjekt og push docker-image
+    if: github.repository != 'navikt/tms-backend-deploy'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    outputs:
+      image: ${{ steps.docker-build-push.outputs.image }}
+    steps:
+      - name: Sjekk ut commit
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ env.COMMIT_SHA }}
+
+      - name: Sett opp java
+        uses: actions/setup-java@v6
+        with:
+          java-version: 21
+          distribution: 'temurin'
+
+      - name: Sett opp gradle
+        uses: gradle/actions/setup-gradle@v6
+
+      - name: Bygg prosjekt
+        run: ./gradlew assemble
+
+      - name: Build og push docker-image
+        uses: nais/docker-build-push@v0
+        id: docker-build-push
+        with:
+          team: min-side
+          identity_provider: ${{ secrets.NAIS_WORKLOAD_IDENTITY_PROVIDER }}
+          project_id: ${{ vars.NAIS_MANAGEMENT_PROJECT_ID }}
+
+  deploy:
+    name: Deploy til NAIS
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    strategy:
+      matrix:
+        cluster: ${{ fromJSON(inputs.clusters || toJSON(github.event.client_payload.clusters)) }}
+    steps:
+      - name: Sjekk ut commit
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ env.COMMIT_SHA }}
+
+      - name: 'Deploy til ${{ matrix.cluster }}'
+        uses: nais/deploy/actions/deploy@v2
+        env:
+          CLUSTER: ${{ matrix.cluster }}
+          RESOURCE: ./nais/${{ matrix.cluster }}/nais.yaml
+          VAR: version=${{ needs.build.outputs.image }}

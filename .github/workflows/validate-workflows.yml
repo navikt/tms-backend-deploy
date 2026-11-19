@@ -1,0 +1,24 @@
+name: Validate workflows
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  actionlint:
+    name: actionlint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out workflows
+        uses: actions/checkout@v7
+
+      - name: Validate workflow files
+        uses: docker://rhysd/actionlint:1.7.12
+        with:
+          args: -color
