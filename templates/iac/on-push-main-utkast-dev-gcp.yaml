@@ -1,0 +1,20 @@
+name: Deploy aapen-utkast i dev-gcp
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - dev-gcp/aapen-utkast.yaml
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    uses: navikt/tms-backend-deploy/.github/workflows/reusable-deploy-iac.yml@main
+    with:
+      cluster: dev-gcp
+      resource: ./dev-gcp/aapen-utkast.yaml
+    secrets:
+      NAIS_DEPLOY_APIKEY: ${{ secrets.NAIS_DEPLOY_APIKEY }}
