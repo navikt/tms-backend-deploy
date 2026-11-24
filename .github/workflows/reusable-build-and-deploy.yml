@@ -1,32 +1,33 @@
-name: Bygg branch
+name: 'Gjenbrukbar: bygg og deploy'
 
 on:
   workflow_call:
     inputs:
+      clusters:
+        description: 'JSON-array med clustere, f.eks. ["dev-gcp", "prod-gcp"]'
+        required: true
+        type: string
       frontend-directory:
-        description: 'Plassering til frontend, f.eks. web-app. Hvis tomt, kjøres ikke.'
+        description: 'Plassering til frontend, f.eks. web-app. Hvis tomt, kjøres ikke'
         type: string
         default: ''
     secrets:
+      NAIS_WORKLOAD_IDENTITY_PROVIDER:
+        required: true
       READER_TOKEN:
         required: false
-  push:
-    branches-ignore:
-      - master
-      - main
-      - tms-dependency-admin_*
-    paths-ignore:
-      - .github/**
 
 jobs:
-  build-branch:
-    if: github.repository != 'navikt/tms-backend-deploy'
+  build:
+    name: Bygg, test og publiser image
     runs-on: ubuntu-latest
     permissions:
       contents: read
+      id-token: write
+    outputs:
+      image: ${{ steps.docker-build-push.outputs.image }}
     steps:
-
-      - name: Sjekk ut koden
+      - name: Sjekk ut prosjekt
         uses: actions/checkout@v7
 
       - name: Sett opp java
@@ -54,7 +55,7 @@ jobs:
           cache: 'pnpm'
           cache-dependency-path: ${{ inputs.frontend-directory }}/pnpm-lock.yaml
 
-      - name: Bygg og test prosjekt
+      - name: Bygg prosjekt og kjør tester
         run: ./gradlew build
 
       - name: Installer frontend-avhengigheter
@@ -75,3 +76,32 @@ jobs:
         run: pnpm --dir "$FRONTEND_DIRECTORY" build
         env:
           FRONTEND_DIRECTORY: ${{ inputs.frontend-directory }}
+
+      - name: Build og push docker-image
+        uses: nais/docker-build-push@v0
+        id: docker-build-push
+        with:
+          team: min-side
+          identity_provider: ${{ secrets.NAIS_WORKLOAD_IDENTITY_PROVIDER }}
+          project_id: ${{ vars.NAIS_MANAGEMENT_PROJECT_ID }}
+
+  deploy:
+    name: Deploy til NAIS
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    strategy:
+      matrix:
+        cluster: ${{ fromJSON(inputs.clusters) }}
+    steps:
+      - name: Sjekk ut prosjekt
+        uses: actions/checkout@v7
+
+      - name: 'Deploy til ${{ matrix.cluster }}'
+        uses: nais/deploy/actions/deploy@v2
+        env:
+          CLUSTER: ${{ matrix.cluster }}
+          RESOURCE: ./nais/${{ matrix.cluster }}/nais.yaml
+          VAR: version=${{ needs.build.outputs.image }}

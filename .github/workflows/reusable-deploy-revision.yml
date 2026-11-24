@@ -1,4 +1,4 @@
-name: Deploy revision
+name: 'Gjenbrukbar: deploy revisjon'
 
 on:
   workflow_call:

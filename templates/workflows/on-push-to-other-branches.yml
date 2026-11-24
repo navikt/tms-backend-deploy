@@ -17,4 +17,4 @@ permissions:
 
 jobs:
   build-branch:
-    uses: navikt/tms-backend-deploy/.github/workflows/default-build-branch.yml@main
+    uses: navikt/tms-backend-deploy/.github/workflows/reusable-build-and-test.yml@main

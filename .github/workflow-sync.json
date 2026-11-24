@@ -1,5 +1,32 @@
 {
   "repositories": [
-    "navikt/tms-utkast"
+    "navikt/pb-nav-mocked",
+    "navikt/mine-saker-api",
+    "navikt/tms-ktor-token-support",
+    "navikt/tms-tokenx-test-dummy",
+    "navikt/tms-azure-test-dummy",
+    "navikt/tms-utbetalingsoversikt-api",
+    "navikt/tms-event-test-producer",
+    "navikt/tms-min-side-proxy",
+    "navikt/tms-event-api",
+    "navikt/tms-doknotstatus-converter",
+    "navikt/tms-varseltekst-monitor",
+    "navikt/tms-utkast",
+    "navikt/tms-dependency-admin",
+    "navikt/tms-varsel-api",
+    "navikt/tms-mikrofrontend-selector",
+    "navikt/tms-varsel-event-gateway",
+    "navikt/tms-statistikk",
+    "navikt/tms-varsel-authority",
+    "navikt/tms-deploy",
+    "navikt/tms-common-lib",
+    "navikt/tms-varsel-admin",
+    "navikt/tms-brannslukning",
+    "navikt/tms-kafka-tools",
+    "navikt/tms-ekstern-varsling",
+    "navikt/tms-personopplysninger-api",
+    "navikt/tms-endre-kontonummer",
+    "navikt/tms-arbeidsforhold-api",
+    "navikt/tms-kafka-dashboard"
   ]
 }

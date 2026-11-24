@@ -1,0 +1,35 @@
+name: 'Gjenbrukbar: deploy IaC'
+
+on:
+  workflow_call:
+    inputs:
+      cluster:
+        description: 'Cluster som ressursen skal deployes til, f.eks. prod-gcp'
+        required: true
+        type: string
+      resource:
+        description: 'Sti til ressursen, f.eks. ./prod-gcp/aapen-utkast.yaml'
+        required: true
+        type: string
+    secrets:
+      NAIS_DEPLOY_APIKEY:
+        required: true
+
+jobs:
+  deploy:
+    name: Deploy til NAIS
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Sjekk ut koden
+        uses: actions/checkout@v7
+
+      - name: 'Deploy til ${{ inputs.cluster }}'
+        uses: nais/deploy/actions/deploy@v2
+        env:
+          REF: ${{ github.sha }}
+          APIKEY: ${{ secrets.NAIS_DEPLOY_APIKEY }}
+          CLUSTER: ${{ inputs.cluster }}
+          RESOURCE: ${{ inputs.resource }}
+          PRINT_PAYLOAD: 'true'
