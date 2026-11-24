@@ -1,0 +1,24 @@
+name: Update default backend workflows
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out workflow templates
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Test workflow sync
+        run: python3 -m unittest discover -s scripts -p 'test_*.py'
+
+      - name: Update workflows and open pull requests
+        env:
+          WORKFLOW_SYNC_TOKEN: ${{ secrets.WORKFLOW_SYNC_TOKEN }}
+        run: python3 scripts/sync_workflows.py
