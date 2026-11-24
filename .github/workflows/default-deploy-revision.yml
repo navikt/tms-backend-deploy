@@ -11,9 +11,15 @@ on:
         description: 'JSON-array med cluster som skal deployes til'
         required: true
         type: string
+      frontend-directory:
+        description: 'Plassering til frontend, f.eks. web-app. Hvis tomt, kjøres ikke.'
+        type: string
+        default: ''
     secrets:
       NAIS_WORKLOAD_IDENTITY_PROVIDER:
         required: true
+      READER_TOKEN:
+        required: false
   repository_dispatch:
     types: deploy-revision
 
@@ -45,8 +51,43 @@ jobs:
       - name: Sett opp gradle
         uses: gradle/actions/setup-gradle@v6
 
+      - name: Sett opp pnpm
+        if: inputs.frontend-directory != ''
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+          package_json_file: ${{ inputs.frontend-directory }}/package.json
+
+      - name: Sett opp node
+        if: inputs.frontend-directory != ''
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          registry-url: https://npm.pkg.github.com
+          cache: 'pnpm'
+          cache-dependency-path: ${{ inputs.frontend-directory }}/pnpm-lock.yaml
+
       - name: Bygg prosjekt
         run: ./gradlew assemble
+
+      - name: Installer frontend-avhengigheter
+        if: inputs.frontend-directory != ''
+        run: pnpm --dir "$FRONTEND_DIRECTORY" install --frozen-lockfile --strict-peer-dependencies=false
+        env:
+          FRONTEND_DIRECTORY: ${{ inputs.frontend-directory }}
+          NODE_AUTH_TOKEN: ${{ secrets.READER_TOKEN }}
+
+      - name: Kjør frontend-tester
+        if: inputs.frontend-directory != ''
+        run: pnpm --dir "$FRONTEND_DIRECTORY" test
+        env:
+          FRONTEND_DIRECTORY: ${{ inputs.frontend-directory }}
+
+      - name: Bygg frontend-filer
+        if: inputs.frontend-directory != ''
+        run: pnpm --dir "$FRONTEND_DIRECTORY" build
+        env:
+          FRONTEND_DIRECTORY: ${{ inputs.frontend-directory }}
 
       - name: Build og push docker-image
         uses: nais/docker-build-push@v0

@@ -1,19 +1,10 @@
-name: Create missing backend workflows
+name: Update default backend workflows
 
 on:
   workflow_dispatch:
-    inputs:
-      dry-run:
-        description: Preview missing workflows without creating branches or pull requests
-        type: boolean
-        default: true
 
 permissions:
   contents: read
-
-concurrency:
-  group: sync-backend-workflows
-  cancel-in-progress: false
 
 jobs:
   sync:
@@ -27,8 +18,7 @@ jobs:
       - name: Test workflow sync
         run: python3 -m unittest discover -s scripts -p 'test_*.py'
 
-      - name: Create missing workflows
+      - name: Update workflows and open pull requests
         env:
           WORKFLOW_SYNC_TOKEN: ${{ secrets.WORKFLOW_SYNC_TOKEN }}
-          DRY_RUN: ${{ inputs.dry-run }}
         run: python3 scripts/sync_workflows.py
