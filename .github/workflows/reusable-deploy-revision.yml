@@ -114,7 +114,7 @@ jobs:
           ref: ${{ env.COMMIT_SHA }}
 
       - name: 'Deploy til ${{ matrix.cluster }}'
-        uses: nais/deploy/actions/deploy@v2
+        uses: nais/deploy/actions/deploy@v3
         env:
           CLUSTER: ${{ matrix.cluster }}
           RESOURCE: ./nais/${{ matrix.cluster }}/nais.yaml
