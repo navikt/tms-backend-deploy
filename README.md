@@ -43,13 +43,10 @@ jobs:
       NAIS_WORKLOAD_IDENTITY_PROVIDER: ${{ secrets.NAIS_WORKLOAD_IDENTITY_PROVIDER }}
 ```
 
-- Choose the trigger in the caller; triggers are not inherited.
-- Deploy only trusted code; do not use deployment access to run untrusted pull request code.
+- Choose the trigger in the caller.
 - Change `uses` to the desired workflow. Add required inputs under the job's `with:`.
 - Each selected cluster in an application deployment needs a manifest at `nais/<cluster>/nais.yaml`. Use `'["dev-gcp"]'` to deploy to only one cluster.
-- Application build/deploy workflows need the secret above and the caller's `NAIS_MANAGEMENT_PROJECT_ID` variable. Branch tests do not need that secret, but can use `READER_TOKEN` for frontend dependencies (see below). Automerge does not need the example's `secrets:` block.
-- Use `contents: read`; application build/deploy workflows also need `id-token: write`. Dependency graph submission is not enabled.
-- Automerge needs `contents: write`, `pull-requests: write`, `checks: read` and `statuses: read`. Its `GITHUB_TOKEN` merges do not trigger push workflows.
+- Application build/deploy workflows need the secret above and the caller's `NAIS_MANAGEMENT_PROJECT_ID` variable.
 - Pin a commit SHA instead of `@main` for controlled updates. For a private central repository, allow caller access in its Actions settings.
 
 ## Applications with a frontend
@@ -57,19 +54,13 @@ jobs:
 The three application build workflows accept an optional `frontend-directory` input,
 relative to the application repository root. Set it to `web-app`, for example,
 to enable frontend steps. Omitting it or setting it to `''` skips all frontend
-steps; existing backend-only callers do not need changes.
+steps.
 
 The frontend directory must contain `package.json` with `test` and `build`
-scripts and a committed `pnpm-lock.yaml`. The workflows use Node 24 and pnpm 10,
-install dependencies with `--frozen-lockfile --strict-peer-dependencies=false`,
-then run the frontend tests and build after the Gradle build. Deployment workflows
-build the frontend before publishing the Docker image; the application's
-Dockerfile must include the generated frontend files.
+scripts and a committed `pnpm-lock.yaml`. The workflows use Node 24.
 
 For private GitHub Packages dependencies, pass the application's `READER_TOKEN`
-secret with `read:packages` access to the required packages. It is exposed as
-`NODE_AUTH_TOKEN` during installation. Keep the application's npm registry
-configuration for its package scopes. Omit `READER_TOKEN` if it is not needed.
+secret with `read:packages` access to the required package.
 
 Example caller for main:
 
@@ -96,12 +87,6 @@ jobs:
       READER_TOKEN: ${{ secrets.READER_TOKEN }}
 ```
 
-Set `frontend-directory` and pass `READER_TOKEN` in each frontend application's
-caller, including manual branch deployment and revision deployment. Manual branch
-deployment uses `reusable-build-and-deploy.yml`; revision deployment uses
-`reusable-deploy-revision.yml` with its existing `commit` and `clusters` inputs.
-The deployment secret, project variable, and cluster manifests described above
-are still required.
 
 For branch builds, keep the caller's branch triggers and use this job instead:
 
@@ -147,8 +132,3 @@ jobs:
     secrets:
       NAIS_DEPLOY_APIKEY: ${{ secrets.NAIS_DEPLOY_APIKEY }}
 ```
-
-For `on-push-main-<<name>>-dev-gcp.yaml`, use the same caller with `prod-gcp`
-replaced by `dev-gcp` in the workflow name, path filter, cluster, and resource.
-Adjust the resource filename to match each repository's manifest. Triggers and
-path filters belong in the callers, not the reusable workflow.
