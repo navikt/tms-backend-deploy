@@ -53,7 +53,7 @@ jobs:
 
       - name: Sett opp pnpm
         if: inputs.frontend-directory != ''
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v6
         with:
           package_json_file: ${{ inputs.frontend-directory }}/package.json
 
