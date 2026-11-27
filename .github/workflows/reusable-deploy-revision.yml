@@ -74,7 +74,7 @@ jobs:
         run: pnpm --dir "$FRONTEND_DIRECTORY" install --frozen-lockfile --strict-peer-dependencies=false
         env:
           FRONTEND_DIRECTORY: ${{ inputs.frontend-directory }}
-          NODE_AUTH_TOKEN: ${{ secrets.READER_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Kjør frontend-tester
         if: inputs.frontend-directory != ''
