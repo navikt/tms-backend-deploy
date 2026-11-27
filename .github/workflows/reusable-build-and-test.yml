@@ -68,9 +68,11 @@ jobs:
         run: pnpm --dir "$FRONTEND_DIRECTORY" test
         env:
           FRONTEND_DIRECTORY: ${{ inputs.frontend-directory }}
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Bygg frontend-filer
         if: inputs.frontend-directory != ''
         run: pnpm --dir "$FRONTEND_DIRECTORY" build
         env:
           FRONTEND_DIRECTORY: ${{ inputs.frontend-directory }}
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
